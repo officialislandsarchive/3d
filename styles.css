@@ -1,0 +1,9 @@
+body {
+    font-family: Arial, sans-serif;
+}
+
+#viewer {
+    width: 400px;
+    height: 300px;
+    margin-top: 20px;
+}
