@@ -1,67 +1,53 @@
 // Import necessary modules from Three.js
 import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js';
-import { OBJExporter } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/js/exporters/OBJExporter.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/jsm/loaders/GLTFLoader.js';
 
-let scene, camera, renderer, island;
+let scene, camera, renderer, controls;
 
 init();
 animate();
 
 function init() {
-    // Scene setup
+    // Create the scene
     scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xa0a0a0);
+    scene.fog = new THREE.Fog(0xa0a0a0, 10, 50);
+
+    // Set up the camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas') });
+    camera.position.set(0, 10, 20);
+
+    // Set up the renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('canvas').appendChild(renderer.domElement);
 
-    // Terrain (Island)
-    const islandGeometry = new THREE.CylinderGeometry(5, 5, 1, 32);
-    const islandMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
-    island = new THREE.Mesh(islandGeometry, islandMaterial);
-    island.position.y = -1;
-    scene.add(island);
+    // Add orbit controls
+    controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.25;
+    controls.screenSpacePanning = false;
+    controls.maxPolarAngle = Math.PI / 2;
 
-    // Simple Tree
-    const trunkGeometry = new THREE.CylinderGeometry(0.2, 0.2, 1);
-    const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
-    const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
-    trunk.position.y = 0.5;
-    
-    const foliageGeometry = new THREE.SphereGeometry(0.5, 16, 16);
-    const foliageMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
-    const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
-    foliage.position.y = 1.5;
-    
-    const tree = new THREE.Group();
-    tree.add(trunk);
-    tree.add(foliage);
-    tree.position.set(1, -0.5, 1);
-    scene.add(tree);
+    // Add ambient light
+    const ambientLight = new THREE.AmbientLight(0x404040, 3); // Soft white light
+    scene.add(ambientLight);
 
-    // Simple Structure (House)
-    const houseGeometry = new THREE.BoxGeometry(2, 1.5, 2);
-    const houseMaterial = new THREE.MeshStandardMaterial({ color: 0x8B0000 });
-    const house = new THREE.Mesh(houseGeometry, houseMaterial);
-    house.position.set(-2, -0.25, -2);
-    scene.add(house);
+    // Add directional light
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(10, 10, 10);
+    scene.add(dirLight);
 
-    // Lighting
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(5, 10, 7.5);
-    scene.add(light);
+    // Load a placeholder 3D model
+    const loader = new GLTFLoader();
+    loader.load('https://threejs.org/examples/models/gltf/Duck/glTF/Duck.gltf', function (gltf) {
+        scene.add(gltf.scene);
+    }, undefined, function (error) {
+        console.error(error);
+    });
 
-    // Camera position
-    camera.position.z = 10;
-    
-    // Download button
-    const button = document.createElement('button');
-    button.textContent = 'Download 3D Model';
-    button.style.position = 'absolute';
-    button.style.top = '10px';
-    button.style.left = '10px';
-    button.onclick = downloadModel;
-    document.body.appendChild(button);
-    
+    // Handle window resize
     window.addEventListener('resize', onWindowResize, false);
 }
 
@@ -73,17 +59,6 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
-    island.rotation.y += 0.01;
+    controls.update();
     renderer.render(scene, camera);
-}
-
-function downloadModel() {
-    const exporter = new OBJExporter();
-    const objData = exporter.parse(scene);
-
-    const blob = new Blob([objData], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'starter_island.obj';
-    link.click();
 }
